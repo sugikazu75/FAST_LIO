@@ -85,6 +85,19 @@ void Preprocess::process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointClo
   *pcl_out = pl_surf;
 }
 
+void Preprocess::reset()
+{
+  pl_full.clear();
+  pl_corn.clear();
+  pl_surf.clear();
+
+  for(int i = 0; i < 128; i++)
+    {
+      pl_buff[i].clear();
+      typess[i].resize(0);
+    }
+}
+
 void Preprocess::avia_handler(const livox_ros_driver2::CustomMsg::ConstPtr &msg)
 {
   pl_surf.clear();

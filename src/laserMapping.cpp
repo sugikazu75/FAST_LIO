@@ -296,6 +296,8 @@ void reset_cbk(const std_msgs::Empty::ConstPtr &msg)
   kf_pre.change_x(x_init);
   kf_pre.change_P(P_init);
 
+  p_pre->reset();
+
   mtx_buffer.unlock();
   sig_buffer.notify_all();
 }
