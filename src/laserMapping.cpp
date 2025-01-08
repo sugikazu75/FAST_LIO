@@ -53,6 +53,7 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/io/pcd_io.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_msgs/Empty.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
 #include <geometry_msgs/Vector3.h>
@@ -276,6 +277,27 @@ void lasermap_fov_segment()
     double delete_begin = omp_get_wtime();
     if(cub_needrm.size() > 0) kdtree_delete_counter = ikdtree.Delete_Point_Boxes(cub_needrm);
     kdtree_delete_time = omp_get_wtime() - delete_begin;
+}
+
+void reset_cbk(const std_msgs::Empty::ConstPtr &msg)
+{
+  mtx_buffer.lock();
+
+  imu_buffer.clear();
+  lidar_buffer.clear();
+
+  auto x_init = state_ikfom();
+  Eigen::Matrix<double, 23, 23> P_init; // size is hard coded
+  P_init.setIdentity();
+
+  kf.change_x(x_init);
+  kf.change_P(P_init);
+
+  kf_pre.change_x(x_init);
+  kf_pre.change_P(P_init);
+
+  mtx_buffer.unlock();
+  sig_buffer.notify_all();
 }
 
 void standard_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg) 
@@ -888,6 +910,7 @@ int main(int argc, char** argv)
         nh.subscribe(lid_topic, 200000, livox_pcl_cbk) : \
         nh.subscribe(lid_topic, 200000, standard_pcl_cbk);
     ros::Subscriber sub_imu = nh.subscribe(imu_topic, 200000, imu_cbk);
+    ros::Subscriber sub_reset = nh.subscribe("fast_lio/reset", 1, reset_cbk);
     ros::Publisher pubLaserCloudFull = nh.advertise<sensor_msgs::PointCloud2>
             ("cloud_registered", 100000);
     ros::Publisher pubLaserCloudFull_body = nh.advertise<sensor_msgs::PointCloud2>
